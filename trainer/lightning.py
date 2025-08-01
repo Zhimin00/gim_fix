@@ -145,24 +145,38 @@ class Trainer(pl.LightningModule):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
 
-        imgs, _ = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.img_size, intrinsics=None)
-        imgs_large, intrinsics = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori])
-        K0, K1 = intrinsics
-        image_pairs = make_symmetric_pairs(imgs)
-        image_large_pairs = make_symmetric_pairs(imgs_large)
-        res = inference_upsample_cuda(image_pairs, image_large_pairs, self.model, 'cuda', batch_size=1, verbose=True)
-        warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
+        if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
+            imgs, intrinsics = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori])
+            K0, K1 = intrinsics
+            image_pairs = make_symmetric_pairs(imgs)
+            res = inference_cuda(image_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            warp0, certainty0, warp1, certainty1 = match_symmetric(res['corresps'])         
+            h1, w1 = imgs[0]['true_shape'][0]
+            h2, w2 = imgs[1]['true_shape'][0]  
+            hw0_i = imgs[0]['img'].shape[2:]
+            hw1_i = imgs[1]['img'].shape[2:]              
+        else:
+            imgs, _ = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.img_size, intrinsics=None)
+            imgs_large, intrinsics = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori])
+            K0, K1 = intrinsics
+            image_pairs = make_symmetric_pairs(imgs)
+            image_large_pairs = make_symmetric_pairs(imgs_large)
+            res = inference_upsample_cuda(image_pairs, image_large_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
+            h1, w1 = imgs_large[0]['true_shape'][0]
+            h2, w2 = imgs_large[1]['true_shape'][0]
+            hw0_i = imgs_large[0]['img'].shape[2:]
+            hw1_i = imgs_large[1]['img'].shape[2:]
         sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
 
-        h1, w1 = imgs_large[0]['true_shape'][0]
-        h2, w2 = imgs_large[1]['true_shape'][0]
+        
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
         b_ids = torch.where(mconf[None])[0]
         mask = mconf > 0
         data.update({
-            'hw0_i': imgs_large[0]['img'].shape[2:],
-            'hw1_i': imgs_large[1]['img'].shape[2:],
+            'hw0_i': hw0_i,
+            'hw1_i': hw1_i,
             'mkpts0_f': kpts0[mask],
             'mkpts1_f': kpts1[mask],
             'm_bids': b_ids,
