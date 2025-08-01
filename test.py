@@ -22,17 +22,18 @@ from networks.loftr.config import get_cfg_defaults as get_network_cfg
 from trainer.config import get_cfg_defaults as get_trainer_cfg
 from trainer.debug import get_cfg_defaults as get_debug_cfg
 
-from datasets.data import MultiSceneDataModule
-from datasets import gl3d
-from datasets import gtasfm
-from datasets import multifov
-from datasets import blendedmvs
-from datasets import iclnuim
-from datasets import scenenet
-from datasets import eth3d
-from datasets import kitti
-from datasets import robotcar
+from gim_datasets.data import MultiSceneDataModule
+from gim_datasets import gl3d
+from gim_datasets import gtasfm
+from gim_datasets import multifov
+from gim_datasets import blendedmvs
+from gim_datasets import iclnuim
+from gim_datasets import scenenet
+from gim_datasets import eth3d
+from gim_datasets import kitti
+from gim_datasets import robotcar
 
+import pdb
 Benchmarks = dict(
     GL3D            = gl3d.cfg,
     GTASfM          = gtasfm.cfg,
@@ -68,6 +69,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
 
     # Project args
+    parser.add_argument('--DATA_ROOT', type=str, default='data/zeb',
+                        help=f'Path to Zeb Datasets', )
     parser.add_argument('--trains', type=str, choices=set(Benchmarks), nargs='+',
                         default=[],
                         help=f'Train Datasets: {set(Benchmarks)}', )
@@ -100,8 +103,10 @@ if __name__ == '__main__':
                         help=f'Pretrained model weight',)
 
     # Hyper-parameters
-    parser.add_argument('--img_size', type=int, default=9999,
+    parser.add_argument('--img_size', type=int, default=512,
                         help='Image Size')
+    parser.add_argument('--fine_size', type=int, default=None, nargs='?',
+                    const=1600, help='Image max size (optional)')
     parser.add_argument('--lr', type=float, default=8e-3,
                         help='Learning rate')
 
@@ -123,6 +128,9 @@ if __name__ == '__main__':
     parser.add_argument('--ransac', type=str, choices=set(RANSACs), default='MAGSAC',
                         help=f'RANSAC Methods: {set(RANSACs)}', )
     parser.add_argument("--version", type=str, default='AUC',
+                        help=f'Model version',)
+    
+    parser.add_argument("--checkpoint_path", type=str, default='./checkpoint-final.pth',
                         help=f'Model version',)
 
     args = parser.parse_args()
@@ -186,7 +194,6 @@ if __name__ == '__main__':
     # model
     # ------------
     trainer = Trainer(pcfg, tcfg, dcfg, ncfg)
-    
     # ------------
     # training
     # ------------
