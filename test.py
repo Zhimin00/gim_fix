@@ -22,18 +22,28 @@ from networks.loftr.config import get_cfg_defaults as get_network_cfg
 from trainer.config import get_cfg_defaults as get_trainer_cfg
 from trainer.debug import get_cfg_defaults as get_debug_cfg
 
-from gim_datasets.data import MultiSceneDataModule
-from gim_datasets import gl3d
-from gim_datasets import gtasfm
-from gim_datasets import multifov
-from gim_datasets import blendedmvs
-from gim_datasets import iclnuim
-from gim_datasets import scenenet
-from gim_datasets import eth3d
-from gim_datasets import kitti
-from gim_datasets import robotcar
+# from gim_datasets.data import MultiSceneDataModule
+# from gim_datasets import gl3d
+# from gim_datasets import gtasfm
+# from gim_datasets import multifov
+# from gim_datasets import blendedmvs
+# from gim_datasets import iclnuim
+# from gim_datasets import scenenet
+# from gim_datasets import eth3d
+# from gim_datasets import kitti
+# from gim_datasets import robotcar
 
-import pdb
+from spider_datasets.data import MultiSceneDataModule
+from spider_datasets import gl3d
+from spider_datasets import gtasfm
+from spider_datasets import multifov
+from spider_datasets import blendedmvs
+from spider_datasets import iclnuim
+from spider_datasets import scenenet
+from spider_datasets import eth3d
+from spider_datasets import kitti
+from spider_datasets import robotcar
+
 Benchmarks = dict(
     GL3D            = gl3d.cfg,
     GTASfM          = gtasfm.cfg,
@@ -59,7 +69,8 @@ RANSACs = dict(
     PARALLEL = cv2.USAC_PARALLEL,
 )
 
-MODEL_ZOO = ['gim_roma', 'gim_dkm', 'gim_loftr', 'gim_lightglue', 'root_sift']
+MODEL_ZOO = ['gim_roma', 'gim_dkm', 'gim_loftr', 'gim_lightglue', 'root_sift', 
+             'spider']
 
 
 if __name__ == '__main__':
@@ -149,7 +160,7 @@ if __name__ == '__main__':
 
     # load weight
     ncfg.LOFTR.WEIGHT = join('weights', args.weight + '_' + args.version + '.ckpt')
-    if args.weight == 'root_sift':
+    if args.weight not in ['gim_roma', 'gim_dkm', 'gim_loftr', 'gim_lightglue']:
         ncfg.LOFTR.WEIGHT = None
 
     # ------------

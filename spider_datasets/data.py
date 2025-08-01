@@ -94,7 +94,7 @@ class MultiSceneDataModule(pl.LightningDataModule):
 
                 datasets = self._setup_dataset(
                     benchmark=benchmark,
-                    data_root=dcfg.DATASET.TRAIN.DATA_ROOT,
+                    data_root=self.args.DATA_ROOT,
                     npz_root=dcfg.DATASET.TRAIN.NPZ_ROOT,
                     scene_list_path=dcfg.DATASET.TRAIN.LIST_PATH,
                     df=self.dcfg.DF,
@@ -102,7 +102,6 @@ class MultiSceneDataModule(pl.LightningDataModule):
                     min_overlap_score=dcfg.DATASET.TRAIN.MIN_OVERLAP_SCORE,
                     max_overlap_score=dcfg.DATASET.TRAIN.MAX_OVERLAP_SCORE,
                     max_resize=self.args.img_size,
-                    fine_resize=self.args.fine_size, 
                     augment_fn=build_augmentor(dcfg.DATASET.TRAIN.AUGMENTATION_TYPE),
                     max_samples=dcfg.DATASET.TRAIN.MAX_SAMPLES,
                     mode='train',
@@ -121,7 +120,7 @@ class MultiSceneDataModule(pl.LightningDataModule):
 
                 datasets = self._setup_dataset(
                     benchmark=benchmark,
-                    data_root=dcfg.DATASET.VALID.DATA_ROOT,
+                    data_root=self.args.DATA_ROOT,
                     npz_root=dcfg.DATASET.VALID.NPZ_ROOT,
                     scene_list_path=dcfg.DATASET.VALID.LIST_PATH,
                     df=self.dcfg.DF,
@@ -129,7 +128,6 @@ class MultiSceneDataModule(pl.LightningDataModule):
                     min_overlap_score=dcfg.DATASET.VALID.MIN_OVERLAP_SCORE,
                     max_overlap_score=dcfg.DATASET.VALID.MAX_OVERLAP_SCORE,
                     max_resize=self.args.img_size,
-                    fine_resize=self.args.fine_size, 
                     augment_fn=build_augmentor(dcfg.DATASET.VALID.AUGMENTATION_TYPE),
                     max_samples=dcfg.DATASET.VALID.MAX_SAMPLES,
                     mode='valid',
@@ -149,7 +147,7 @@ class MultiSceneDataModule(pl.LightningDataModule):
 
                 datasets = self._setup_dataset(
                     benchmark=benchmark,
-                    data_root=dcfg.DATASET.TESTS.DATA_ROOT,
+                    data_root=self.args.DATA_ROOT,
                     npz_root=dcfg.DATASET.TESTS.NPZ_ROOT,
                     scene_list_path=dcfg.DATASET.TESTS.LIST_PATH,
                     df=self.dcfg.DF,
@@ -157,7 +155,6 @@ class MultiSceneDataModule(pl.LightningDataModule):
                     min_overlap_score=dcfg.DATASET.TESTS.MIN_OVERLAP_SCORE,
                     max_overlap_score=dcfg.DATASET.TESTS.MAX_OVERLAP_SCORE,
                     max_resize=self.args.img_size,
-                    fine_resize=self.args.fine_size, 
                     augment_fn=build_augmentor(dcfg.DATASET.TESTS.AUGMENTATION_TYPE),
                     max_samples=dcfg.DATASET.TESTS.MAX_SAMPLES,
                     mode='test',
@@ -170,7 +167,7 @@ class MultiSceneDataModule(pl.LightningDataModule):
             if self.gpuid == 0: print('TOTAL_TESTS_SAMPLES:', len(self.tests_datasets))
 
     def _setup_dataset(self, benchmark, data_root, npz_root, scene_list_path, df, padding,
-                       min_overlap_score, max_overlap_score, max_resize, fine_resize, augment_fn,
+                       min_overlap_score, max_overlap_score, max_resize, augment_fn,
                        max_samples, mode, njobs, cfg):
         seq_name = benchmark.lower()
         if seq_name.endswith('2'):
@@ -190,7 +187,6 @@ class MultiSceneDataModule(pl.LightningDataModule):
                     min_overlap_score=min_overlap_score,
                     max_overlap_score=max_overlap_score,
                     max_resize=max_resize,
-                    fine_resize=fine_resize,
                     df=df,
                     padding=padding,
                     augment_fn=augment_fn,

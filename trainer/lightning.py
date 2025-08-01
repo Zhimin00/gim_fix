@@ -17,11 +17,6 @@ from spider.utils.image import load_images_with_intrinsics, load_images_with_int
 from spider.inference import inference_cuda, inference_upsample_cuda
 from spider.utils.utils import match_symmetric, match_symmetric_upsample, sample_symmetric, to_pixel_coordinates, make_symmetric_pairs
 from spider.model import SPIDER
-from mast3r.model import AsymmetricMASt3R
-
-import spider.utils.path_to_dust3r #noqa
-from dust3r.model import AsymmetricCroCo3DStereo
-from dust3r.image_pairs import make_pairs
 
 class Trainer(pl.LightningModule):
 
