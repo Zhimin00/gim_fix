@@ -12,11 +12,16 @@ from collections import OrderedDict
 from tools.comm import all_gather
 from tools.misc import lower_config, flattenList
 from tools.metrics import compute_symmetrical_epipolar_errors, compute_pose_errors
+
 import tools.path_to_spider # noqa
-from spider.utils.image import load_images_with_intrinsics, load_images_with_intrinsics_strict
-from spider.inference import inference_cuda, inference_upsample_cuda
-from spider.utils.utils import match_symmetric, match_symmetric_upsample, sample_symmetric, to_pixel_coordinates, make_symmetric_pairs
+from spider.utils.image import load_images_with_intrinsics, load_images_with_intrinsics_strict, load_original_images, resize_image_with_intrinsics
+from spider.inference import inference_cuda, inference_upsample_cuda, symmetric_inference, symmetric_inference_upsample
+from spider.utils.utils import match, match_upsample, match_symmetric, match_symmetric_upsample, sample_symmetric, to_pixel_coordinates, make_symmetric_pairs
 from spider.model import SPIDER
+import pdb
+import time
+import spider.utils.path_to_dust3r # noqa
+from dust3r.utils.device import collate_with_cat
 
 class Trainer(pl.LightningModule):
 
@@ -144,32 +149,40 @@ class Trainer(pl.LightningModule):
     def spider_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
-
+        imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
+        
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
-            imgs, intrinsics = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori])
+            imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
             K0, K1 = intrinsics
-            image_pairs = make_symmetric_pairs(imgs)
-            res = inference_cuda(image_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            view1, view2 = imgs
+            view1, view2 = collate_with_cat([(view1, view2)])
+            corresps12, corresps21 = symmetric_inference(self.model, view1, view2, 'cuda')
+            warp0, certainty0 = match(corresps12)
+            warp1, certainty1 = match(corresps21, inverse=True)
+
+            # res = inference_cuda(image_pairs, self.model, 'cuda', batch_size=1, verbose=True)
             warp0, certainty0, warp1, certainty1 = match_symmetric(res['corresps'])         
             h1, w1 = imgs[0]['true_shape'][0]
             h2, w2 = imgs[1]['true_shape'][0]  
             hw0_i = imgs[0]['img'].shape[2:]
             hw1_i = imgs[1]['img'].shape[2:]              
         else:
-            imgs, _ = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.img_size, intrinsics=None)
-            imgs_large, intrinsics = load_images_with_intrinsics_strict([img_path0, img_path1], size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori])
+            imgs_coarse, _ = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=None, verbose=False)
+            imgs_fine, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori], verbose=False)
             K0, K1 = intrinsics
-            image_pairs = make_symmetric_pairs(imgs)
-            image_large_pairs = make_symmetric_pairs(imgs_large)
-            res = inference_upsample_cuda(image_pairs, image_large_pairs, self.model, 'cuda', batch_size=1, verbose=True)
-            warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
-            h1, w1 = imgs_large[0]['true_shape'][0]
-            h2, w2 = imgs_large[1]['true_shape'][0]
-            hw0_i = imgs_large[0]['img'].shape[2:]
-            hw1_i = imgs_large[1]['img'].shape[2:]
+            view1_coarse, view2_coarse = imgs_coarse
+            view1_coarse, view2_coarse = collate_with_cat([(view1_coarse, view2_coarse)])
+            view1, view2 = imgs_fine
+            view1, view2 = collate_with_cat([(view1, view2)])
+            low_corresps12, corresps12, low_corresps21, corresps21 = symmetric_inference_upsample(self.model, view1_coarse, view2_coarse, view1, view2, 'cuda')
+            warp0, certainty0 = match_upsample(corresps12, low_corresps12)
+            warp1, certainty1 = match_upsample(corresps21, low_corresps21, inverse=True)
+            # low_corresps12, corresps12, low_corresps21, corresps21 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
+            h1, w1 = imgs_fine[0]['true_shape'][0]
+            h2, w2 = imgs_fine[1]['true_shape'][0]
+            hw0_i = imgs_fine[0]['img'].shape[2:]
+            hw1_i = imgs_fine[1]['img'].shape[2:]
         sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
-
-        
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
         b_ids = torch.where(mconf[None])[0]
@@ -302,7 +315,7 @@ class Trainer(pl.LightningModule):
         return {'Metrics': metrics}
 
     def test_epoch_end(self, outputs):
-
+        time.sleep(1)
         metrics = [o['Metrics'] for o in outputs]
         metrics = {k: flattenList(all_gather(flattenList([_me[k] for _me in metrics]))) for k in metrics[0]}
 
