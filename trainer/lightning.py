@@ -154,34 +154,46 @@ class Trainer(pl.LightningModule):
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
             imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
             K0, K1 = intrinsics
-            view1, view2 = imgs
-            view1, view2 = collate_with_cat([(view1, view2)])
-            corresps12, corresps21 = symmetric_inference(self.model, view1, view2, 'cuda')
-            warp0, certainty0 = match(corresps12)
-            warp1, certainty1 = match(corresps21, inverse=True)
-
-            # res = inference_cuda(image_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            # view1, view2 = imgs
+            # view1, view2 = collate_with_cat([(view1, view2)])
+            # corresps12, corresps21 = symmetric_inference(self.model, view1, view2, 'cuda')
+            # warp0, certainty0 = match(corresps12)
+            # warp1, certainty1 = match(corresps21, inverse=True)
+            imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
+            res = inference_cuda(image_coarse_pairs, self.model, 'cuda', batch_size=1, verbose=True)
             warp0, certainty0, warp1, certainty1 = match_symmetric(res['corresps'])         
-            h1, w1 = imgs[0]['true_shape'][0]
-            h2, w2 = imgs[1]['true_shape'][0]  
-            hw0_i = imgs[0]['img'].shape[2:]
-            hw1_i = imgs[1]['img'].shape[2:]              
+            h1, w1 = imgs_coarses[0]['true_shape'][0]
+            h2, w2 = imgs_coarse[1]['true_shape'][0]  
+            hw0_i = imgs_coarse[0]['img'].shape[2:]
+            hw1_i = imgs_coarse[1]['img'].shape[2:]              
         else:
             imgs_coarse, _ = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=None, verbose=False)
             imgs_fine, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori], verbose=False)
             K0, K1 = intrinsics
-            view1_coarse, view2_coarse = imgs_coarse
-            view1_coarse, view2_coarse = collate_with_cat([(view1_coarse, view2_coarse)])
-            view1, view2 = imgs_fine
-            view1, view2 = collate_with_cat([(view1, view2)])
-            low_corresps12, corresps12, low_corresps21, corresps21 = symmetric_inference_upsample(self.model, view1_coarse, view2_coarse, view1, view2, 'cuda')
-            warp0, certainty0 = match_upsample(corresps12, low_corresps12)
-            warp1, certainty1 = match_upsample(corresps21, low_corresps21, inverse=True)
-            # low_corresps12, corresps12, low_corresps21, corresps21 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
+            imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
+            imgs_fine_pairs = make_symmetric_pairs(imgs_fine)
+            res = inference_upsample_cuda(image_coarse_pairs, image_fine_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
+            sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+
             h1, w1 = imgs_fine[0]['true_shape'][0]
             h2, w2 = imgs_fine[1]['true_shape'][0]
-            hw0_i = imgs_fine[0]['img'].shape[2:]
-            hw1_i = imgs_fine[1]['img'].shape[2:]
+            kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
+
+            b_ids = torch.where(mconf[None])[0]
+            mask = mconf > 0
+            data.update({
+                'hw0_i': imgs_large[0]['img'].shape[2:],
+                'hw1_i': imgs_large[1]['img'].shape[2:],
+                'mkpts0_f': kpts0[mask],
+                'mkpts1_f': kpts1[mask],
+                'm_bids': b_ids,
+                'mconf': mconf[mask],
+                'K0': K0[None],
+                'K1': K1[None],
+            })
+
+           
         sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
