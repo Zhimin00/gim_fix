@@ -178,21 +178,8 @@ class Trainer(pl.LightningModule):
 
             h1, w1 = imgs_fine[0]['true_shape'][0]
             h2, w2 = imgs_fine[1]['true_shape'][0]
-            kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
-
-            b_ids = torch.where(mconf[None])[0]
-            mask = mconf > 0
-            data.update({
-                'hw0_i': imgs_large[0]['img'].shape[2:],
-                'hw1_i': imgs_large[1]['img'].shape[2:],
-                'mkpts0_f': kpts0[mask],
-                'mkpts1_f': kpts1[mask],
-                'm_bids': b_ids,
-                'mconf': mconf[mask],
-                'K0': K0[None],
-                'K1': K1[None],
-            })
-
+            hw0_i = imgs_fine[0]['img'].shape[2:]
+            hw1_i = imgs_fine[1]['img'].shape[2:]   
            
         sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
