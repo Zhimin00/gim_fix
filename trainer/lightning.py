@@ -172,7 +172,7 @@ class Trainer(pl.LightningModule):
             K0, K1 = intrinsics
             imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
             imgs_fine_pairs = make_symmetric_pairs(imgs_fine)
-            res = inference_upsample_cuda(image_coarse_pairs, image_fine_pairs, self.model, 'cuda', batch_size=1, verbose=True)
+            res = inference_upsample_cuda(imgs_coarse_pairs, imgs_fine_pairs, self.model, 'cuda', batch_size=1, verbose=True)
             warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
             sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
 
