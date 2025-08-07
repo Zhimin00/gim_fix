@@ -443,7 +443,6 @@ class Trainer(pl.LightningModule):
             view1_coarse, view2_coarse = collate_with_cat([(view1_coarse, view2_coarse)])
             view1, view2 = imgs_fine
             view1, view2 = collate_with_cat([(view1, view2)])
-
             res = spiderfm_symmetric_inference_upsample(self.model, view1_coarse, view2_coarse, view1, view2, 'cuda')
             descs = [r['desc'][0] for r in res]
             qonfs = [r['desc_conf'][0] for r in res]  
