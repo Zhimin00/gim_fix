@@ -82,6 +82,8 @@ if __name__ == '__main__':
     # Project args
     parser.add_argument('--DATA_ROOT', type=str, default='data/zeb',
                         help=f'Path to Zeb Datasets', )
+    parser.add_argument('--outdir_name', type=str, default='spider1600',
+                        help=f'Path to results', )
     parser.add_argument('--trains', type=str, choices=set(Benchmarks), nargs='+',
                         default=[],
                         help=f'Train Datasets: {set(Benchmarks)}', )
