@@ -1,0 +1,108 @@
+# 8a_part1 io94:9098
+aaviss-challenge7/t03_v02_s02_r04_ReconstructedArea_A01_new
+aaviss-challenge7/t03_v02_s03_r04_ReconstructedArea_A01_new
+aaviss-challenge7/t03_v03_s02_r02_ReconstructedArea_A06
+aaviss-challenge4/t05_v02_s02_r03_ArtifactInjection_M07
+aaviss-challenge4/t05_v02_s03_r03_ArtifactInjection_M07
+
+
+# 8a_part2 io95:9091
+aaviss-challenge3/t01_v02_s04_r05_ImageDensity_A01_GoPro
+aaviss-challenge7/t02_v05_s04_r02_CameraModels_A01_new_intrinsic_aug
+aaviss-challenge7/t02_v05_s05_r02_CameraModels_A01_new_intrinsic_aug
+
+# 8a_part3 io96:9098
+aaviss-challenge7/t03_v04_s00_r02_ReconstructedArea_S04
+aaviss-challenge7/t03_v04_s04_r02_ReconstructedArea_S04
+aaviss-challenge7/t03_v04_s05_r02_ReconstructedArea_S04
+aaviss-challenge7/t03_v05_s02_r04_ReconstructedArea_A01_TwoZones
+aaviss-challenge3/t04_v01_s01_r06_VaryingAltitudes_A01
+aaviss-challenge3/t04_v01_s02_r06_VaryingAltitudes_A01
+aaviss-challenge3/t04_v03_s00_r04_VaryingAltitudes_M01
+aaviss-challenge3/t04_v03_s01_r04_VaryingAltitudes_M01
+aaviss-challenge3/t04_v03_s02_r04_VaryingAltitudes_M01
+aaviss-challenge5/t04_v07_s00_r02_VaryingAltitudes_M07_building_1_door
+aaviss-challenge5/t04_v07_s01_r02_VaryingAltitudes_M07_building_1_door
+aaviss-challenge5/t04_v09_s01_r04_VaryingAltitudes_BLH0001
+aaviss-challenge5/t04_v09_s02_r04_VaryingAltitudes_BLH0001
+
+
+# 8a_part4 io99:9091
+aaviss-challenge7/t05_v06_s01_r04_ArtifactInjection_M04
+aaviss-challenge7/t05_v06_s02_r04_ArtifactInjection_M04
+aaviss-challenge7/t05_v07_s00_r02_ArtifactInjection_M05
+aaviss-challenge7/t05_v07_s01_r02_ArtifactInjection_M05
+aaviss-challenge7/t05_v07_s02_r02_ArtifactInjection_M05
+aaviss-challenge7/t05_v07_s03_r02_ArtifactInjection_M05
+aaviss-challenge7/t05_v08_s00_r03_ArtifactInjection_M06
+aaviss-challenge7/t05_v08_s02_r03_ArtifactInjection_M06
+aaviss-challenge7/t05_v08_s03_r03_ArtifactInjection_M06
+
+# 8a_part5 io105:9091
+aaviss-challenge4/t09_v04_s01_r10_PTZ_A08
+aaviss-challenge5/t09_v05_s02_r02_PTZ_A06_FullTrailerPark
+aaviss-challenge5/t09_v05_s03_r02_PTZ_A06_FullTrailerPark
+aaviss-challenge7/t09_v07_s01_r01_PTZ_A06_SingleZone_intrinsic_aug
+
+# 8a_part5_self io105:9091
+aaviss-challenge3/t01_v06_s02_r02_ImageDensity_A05
+aaviss-challenge3/t04_v03_s03_r04_VaryingAltitudes_M01
+aaviss-challenge5/t04_v09_s02_r04_VaryingAltitudes_BLH0001
+aaviss-challenge5/t09_v06_s00_r02_PTZ_A06_SingleZone
+aaviss-challenge7/t09_v07_s00_r01_PTZ_A06_SingleZone_intrinsic_aug
+
+# 8a_part5_sparse io105:9091
+aaviss-challenge3/t01_v01_s07_r08_ImageDensity_A01_iPad_LTS
+aaviss-challenge3/t01_v02_s06_r05_ImageDensity_A01_GoPro
+aaviss-challenge3/t01_v06_s04_r02_ImageDensity_A05
+aaviss-challenge7/t02_v03_s00_r02_CameraModels_A05
+aaviss-challenge3/t01_v02_s05_r05_ImageDensity_A01_GoPro/
+aaviss-challenge7/t02_v03_s01_r02_CameraModels_A05
+
+
+# 8b_part2 io99:9091
+aaviss-challenge8/t01_v16_s05_r01_ImageDensity_M08_indoor/
+aaviss-challenge8/t01_v16_s06_r01_ImageDensity_M08_indoor/
+aaviss-challenge8/t01_v16_s08_r01_ImageDensity_M08_indoor/
+aaviss-challenge8/t01_v17_s00_r01_ImageDensity_M09_Water/
+aaviss-challenge8/t01_v17_s04_r01_ImageDensity_M09_Water/
+aaviss-challenge8/t01_v18_s06_r02_ImageDensity_S06_low_contrast/
+
+# 8b_part3 io99:9091
+aaviss-challenge8/t01_v51_s01_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v51_s03_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v51_s05_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v51_s06_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v51_s07_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v51_s08_r01_ImageDensity_STR0067/
+aaviss-challenge8/t01_v52_s02_r01_ImageDensity_STR0068/
+aaviss-challenge8/t01_v52_s06_r01_ImageDensity_STR0068/
+aaviss-challenge8/t01_v52_s07_r01_ImageDensity_STR0068/
+aaviss-challenge8/t04_v14_s03_r02_VaryingAltitudes_S06_low_contrast/
+aaviss-challenge8/t04_v15_s00_r01_VaryingAltitudes_A01_large_dataset/
+aaviss-challenge8/t04_v15_s02_r01_VaryingAltitudes_A01_large_dataset/
+
+
+# 8b_part4 all passed
+
+
+
+
+
+### For Rice
+# 8b_part1 
+s3://aaviss-challenge8/t01_v12_s00_r01_ImageDensity_A05_indoor/
+s3://aaviss-challenge8/t01_v12_s01_r01_ImageDensity_A05_indoor/
+s3://aaviss-challenge8/t01_v12_s02_r01_ImageDensity_A05_indoor/
+s3://aaviss-challenge8/t01_v12_s05_r01_ImageDensity_A05_indoor/
+s3://aaviss-challenge8/t01_v15_s03_r01_ImageDensity_M07_indoor/
+s3://aaviss-challenge8/t01_v15_s04_r01_ImageDensity_M07_indoor/
+s3://aaviss-challenge8/t01_v15_s05_r01_ImageDensity_M07_indoor/
+s3://aaviss-challenge8/t01_v16_s00_r01_ImageDensity_M08_indoor/
+s3://aaviss-challenge8/t01_v16_s01_r01_ImageDensity_M08_indoor/
+s3://aaviss-challenge8/t01_v16_s03_r01_ImageDensity_M08_indoor/
+s3://aaviss-challenge8/t01_v16_s04_r01_ImageDensity_M08_indoor/
+
+# 8b_part5 
+aaviss-challenge8/t13_v01_s03_r02_ULTRRA_dev_A01/
+aaviss-challenge8/t13_v03_s02_r02_ULTRRA_test_A10/

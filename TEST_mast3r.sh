@@ -10,6 +10,7 @@ python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests            GL3D --img_size $size --DATA_ROOT $data_root  
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests          GTASfM --img_size $size --DATA_ROOT $data_root  
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests        MultiFoV --img_size $size --DATA_ROOT $data_root 
+
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests   RobotcarNight --img_size $size --DATA_ROOT $data_root  
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests  RobotcarSeason --img_size $size --DATA_ROOT $data_root  
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests RobotcarWeather --img_size $size --DATA_ROOT $data_root
@@ -17,4 +18,6 @@ python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests          ETH3DI --img_size $size --DATA_ROOT $data_root  
   
 python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests      BlendedMVS --img_size $size --DATA_ROOT $data_root  
+
+
 

@@ -12,6 +12,7 @@ from collections import OrderedDict
 from tools.comm import all_gather
 from tools.misc import lower_config, flattenList
 from tools.metrics import compute_symmetrical_epipolar_errors, compute_pose_errors
+import os
 
 import tools.path_to_spider # noqa
 from spider.utils.image import load_images_with_intrinsics, load_images_with_intrinsics_strict, load_original_images, resize_image_with_intrinsics
@@ -187,7 +188,7 @@ class Trainer(pl.LightningModule):
             descs = [r['desc'][0] for r in res]
             qonfs = [r['desc_conf'][0] for r in res]  
             # perform reciprocal matching
-            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=8)
+            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=16)
             kpts0, kpts1, mconf = corres                                      
 
             hw0_i = imgs_coarse[0]['img'].shape[2:]
@@ -604,6 +605,7 @@ class Trainer(pl.LightningModule):
             output += f'{mean(bef)} {sum(bef)} {mean(aft)} {sum(aft)}\n'
 
         scene = Path(self.hparams['dcfg'][self.pcfg["tests"]]['DATASET']['TESTS']['LIST_PATH']).stem.split('_')[0]
-        path = f"dump/zeb/[T] {self.pcfg.weight} {scene:>15} {self.pcfg.version}.txt"
+        os.makedirs(f"dump/zeb/{self.pcfg.outdir_name}", exist_ok=True)
+        path = f"dump/zeb/{self.pcfg.outdir_name}/[T] {self.pcfg.weight} {scene:>15} {self.pcfg.version}.txt"
         with open(path, 'w') as file:
             file.write(output)
