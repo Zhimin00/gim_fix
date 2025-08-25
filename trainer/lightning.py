@@ -605,7 +605,7 @@ class Trainer(pl.LightningModule):
             output += f'{mean(bef)} {sum(bef)} {mean(aft)} {sum(aft)}\n'
 
         scene = Path(self.hparams['dcfg'][self.pcfg["tests"]]['DATASET']['TESTS']['LIST_PATH']).stem.split('_')[0]
-        os.makedirs(f"dump/zeb/{self.pcfg.outdir_name}", exist_ok=True)
+        # os.makedirs(f"dump/zeb/{self.pcfg.outdir_name}", exist_ok=True)
         path = f"dump/zeb/{self.pcfg.outdir_name}/[T] {self.pcfg.weight} {scene:>15} {self.pcfg.version}.txt"
         with open(path, 'w') as file:
             file.write(output)

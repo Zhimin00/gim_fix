@@ -242,7 +242,7 @@ if __name__ == '__main__':
     # ------------
     if args.test:
         scene = Path(dcfg[pcfg["tests"]]['DATASET']['TESTS']['LIST_PATH']).stem.split('_')[0]
-        path = f"dump/zeb/[T] {pcfg.weight} {scene:>15} {pcfg.version}.txt"
+        path = f"dump/zeb/{args.outdir_name}/[T] {pcfg.weight} {scene:>15} {pcfg.version}.txt"
         if exists(path):
             print(f"{path} already exists")
             exit(0)
