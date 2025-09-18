@@ -70,7 +70,7 @@ RANSACs = dict(
 )
 
 MODEL_ZOO = ['gim_roma', 'gim_dkm', 'gim_loftr', 'gim_lightglue', 'root_sift', 
-             'spider', 'mast3r', 'aerial-mast3r', 'mast3r-spider', 'spiderfm', 'spiderfmmlp', 'spiderfmwarp']
+             'spider', 'mast3r', 'aerial-mast3r', 'mast3r-spider', 'spiderfm', 'spiderfmmlp', 'spiderfmwarp','spider_twoheads']
 
 
 if __name__ == '__main__':
