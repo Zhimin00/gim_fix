@@ -810,7 +810,19 @@ class RegressionMatcher(nn.Module):
             if return_inds:
                 return torch.cat((inds_A, inds_B), dim=-1)
             else:
-                return torch.cat((x_A[inds_A], x_B[inds_B]), dim=-1)
+                return torch.cat((x_A[inds_A], x_B[inds_B]), dim=-1), cert_A_to_B[inds_A]
+    def match_keypoints2(self, x_A, x_B, warp, certainty):
+        assert len(warp.shape) == 3 and int(warp.shape[2]) == 4, str(warp.shape)
+        H,W2,_ = warp.shape
+        W = W2//2
+        x_A_from_B = F.grid_sample(warp[:, W:, :2].permute(2,0,1)[None], x_B[None,None], align_corners = False, mode = "bilinear")[0,:,0].mT
+        cert_A_from_B = F.grid_sample(certainty[None, None, :, W:], x_B[None,None], align_corners = False, mode = "bilinear")[0,0,0]
+        # match in the coordinate system of A
+        D = torch.cdist(x_A, x_A_from_B)
+        inds_A, inds_B = torch.nonzero((D == D.min(dim=-1, keepdim = True).values) * (D == D.min(dim=-2, keepdim = True).values) * (cert_A_from_B[None,:] > 0.01), as_tuple = True)
+        return torch.cat((x_A[inds_A], x_B[inds_B]), dim=-1), cert_A_from_B[inds_B]
+        
+
 
     @torch.inference_mode()
     def match(

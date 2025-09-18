@@ -13,16 +13,25 @@ from tools.comm import all_gather
 from tools.misc import lower_config, flattenList
 from tools.metrics import compute_symmetrical_epipolar_errors, compute_pose_errors
 import os
+import sys
+dad_path = os.path.abspath('/cis/home/zshao14/Downloads/dad')
+sys.path.insert(0, dad_path)
+import dad as dad_detector
 
 import tools.path_to_spider # noqa
 from spider.utils.image import load_images_with_intrinsics, load_images_with_intrinsics_strict, load_original_images, resize_image_with_intrinsics
 from spider.inference import inference_cuda, inference_upsample_cuda
 from spider.inference import symmetric_inference as spider_symmetric_inference
 from spider.inference import symmetric_inference_upsample as spider_symmetric_inference_upsample
+from spider.inference import twoheads_symmetric_inference as spidertwoheads_symmetric_inference
+from spider.inference import twoheads_symmetric_inference_upsample as spidertwoheads_symmetric_inference_upsample
+
+from spider.inference import fmwarp_symmetric_inference as spiderfmwarp_symmetric_inference
+
 from spider.inference import fm_symmetric_inference as spiderfm_symmetric_inference
 from spider.inference import fm_symmetric_inference_upsample as spiderfm_symmetric_inference_upsample
-from spider.utils.utils import match, match_upsample, match_symmetric, match_symmetric_upsample, sample_symmetric, to_pixel_coordinates, make_symmetric_pairs
-from spider.model import SPIDER, SPIDER_FM
+from spider.utils.utils import match_keypoints2, match, match_upsample, fmwarp_match, match_symmetric, match_symmetric_upsample, sample_symmetric, to_pixel_coordinates, make_symmetric_pairs
+from spider.model import SPIDER, SPIDER_FM, SPIDER_FMwarp, SPIDER_twoheads
 from mast3r.image_pairs import make_pairs
 from mast3r.inference import coarse_to_fine
 from mast3r.inference import symmetric_inference as mast3r_symmetric_inference
@@ -56,8 +65,16 @@ class Trainer(pl.LightningModule):
             model.use_soft_mutual_nearest_neighbours = False
         elif pcfg.weight == 'gim_roma':
             from networks.roma.roma import RoMa
-            detector = None
+            # detector = dad_detector.load_DaD() #None
             model = RoMa(img_size=[672])
+            # from networks.lightglue.superpoint import SuperPoint
+            # detector = SuperPoint({
+            #     'max_num_keypoints': 4096*8,
+            #     'force_num_keypoints': True,
+            #     'detection_threshold': 0.0,
+            #     'nms_radius': 3,
+            #     'trainable': False,
+            # })
         elif pcfg.weight == 'gim_loftr':
             from networks.loftr.loftr import LoFTR as MODEL
             detector = None
@@ -81,8 +98,10 @@ class Trainer(pl.LightningModule):
             detector = None
             model = None
         elif pcfg.weight == 'spider':
-            detector = None
-            model = SPIDER.from_pretrained(self.pcfg.checkpoint_path)
+            detector = dad_detector.load_DaD() #None
+            model = SPIDER.from_pretrained('/cis/home/zshao14/checkpoints/spider_mast3r_warp_0730/checkpoint-best.pth')
+        elif pcfg.weight == 'spider_twoheads':
+            model = SPIDER_twoheads.from_pretrained(self.pcfg.checkpoint_path)
         elif self.pcfg.weight == 'mast3r' :
             detector = None
             model = AsymmetricMASt3R.from_pretrained('naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric')
@@ -91,11 +110,18 @@ class Trainer(pl.LightningModule):
             model = AsymmetricMASt3R.from_pretrained(self.pcfg.checkpoint_path) 
         elif self.pcfg.weight == 'mast3r-spider':
             detector = None
-            model = AsymmetricMASt3R.from_pretrained('/cis/home/zshao14/checkpoints/checkpoint-aerial-mast3r.pth')
-            model2 = SPIDER.from_pretrained(self.pcfg.checkpoint_path)
+            model = SPIDER_FM.from_pretrained('/cis/home/zshao14/checkpoints/spider_msfm_0910/checkpoint-last.pth')
+            # model = SPIDER_FM.from_pretrained('/cis/home/zshao14/checkpoints/spiderfm_0827/checkpoint-best.pth')
+            #AsymmetricMASt3R.from_pretrained('/cis/home/zshao14/checkpoints/checkpoint-aerial-mast3r.pth')
+            model2 = SPIDER.from_pretrained('/cis/home/zshao14/checkpoints/spider_mast3r_warp_0730/checkpoint-best.pth')
         elif self.pcfg.weight == 'spiderfm':
             detector = None
             model = SPIDER_FM.from_pretrained(self.pcfg.checkpoint_path)
+        elif self.pcfg.weight == 'spiderfmmlp':
+            # model = SPIDER_FM.from_pretrained('/cis/home/zshao14/checkpoints/spiderfm_0827/checkpoint-best.pth')
+            model = SPIDER_FM.from_pretrained('/cis/home/zshao14/checkpoints/spider_msfm_0910/checkpoint-last.pth')
+        elif self.pcfg.weight == 'spiderfmwarp':
+            model = SPIDER_FMwarp.from_pretrained('/cis/home/zshao14/checkpoints/spider_mast3r_fmwarp16_0828_new/checkpoint-best.pth')
         self.detector = detector
         self.model = model
         self.model2 = model2
@@ -112,6 +138,14 @@ class Trainer(pl.LightningModule):
                     if 'encoder.net.fc' in k:
                         state_dict.pop(k)
             elif pcfg.weight == 'gim_roma':
+                # sp_state_dict = torch.load('/cis/home/zshao14/Downloads/gim_fix/weights/gim_lightglue_100h.ckpt', map_location='cpu')
+                # if 'state_dict' in sp_state_dict.keys(): sp_state_dict = sp_state_dict['state_dict']
+                # for k in list(sp_state_dict.keys()):
+                #     if k.startswith('model.'):
+                #         sp_state_dict.pop(k)
+                #     if k.startswith('superpoint.'):
+                #         sp_state_dict[k.replace('superpoint.', '', 1)] = sp_state_dict.pop(k)
+                # self.detector.load_state_dict(sp_state_dict)
                 for k in list(state_dict.keys()):
                     if k.startswith('model.'):
                         state_dict[k.replace('model.', '', 1)] = state_dict.pop(k)
@@ -173,6 +207,10 @@ class Trainer(pl.LightningModule):
             self.mast3r_spider_inference(data)
         elif self.pcfg.weight == 'spiderfm':
             self.spiderfm_inference(data)
+        elif self.pcfg.weight == 'spiderfmmlp':
+            self.spiderfmmlp_inference(data)
+        elif self.pcfg.weight == 'spiderfmwarp':
+            self.spiderfmwarp_inference(data)
 
     def mast3r_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
@@ -188,7 +226,7 @@ class Trainer(pl.LightningModule):
             descs = [r['desc'][0] for r in res]
             qonfs = [r['desc_conf'][0] for r in res]  
             # perform reciprocal matching
-            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=16)
+            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=8)
             kpts0, kpts1, mconf = corres                                      
 
             hw0_i = imgs_coarse[0]['img'].shape[2:]
@@ -256,11 +294,10 @@ class Trainer(pl.LightningModule):
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
             imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
             K0, K1 = intrinsics
-
             view1, view2 = imgs_coarse
             view1, view2 = collate_with_cat([(view1, view2)])
             
-            res = mast3r_symmetric_inference(self.model, view1, view2, 'cuda')
+            res = spiderfm_symmetric_inference(self.model, view1, view2, 'cuda')
             descs = [r['desc'][0] for r in res]
             qonfs = [r['desc_conf'][0] for r in res]  
             # perform reciprocal matching
@@ -288,7 +325,7 @@ class Trainer(pl.LightningModule):
             view1, view2 = imgs_fine
             view1, view2 = collate_with_cat([(view1, view2)])
 
-            res = mast3r_symmetric_inference(self.model, view1_coarse, view2_coarse, 'cuda')
+            res = spiderfm_symmetric_inference(self.model, view1_coarse, view2_coarse, 'cuda')
             descs = [r['desc'][0] for r in res]
             qonfs = [r['desc_conf'][0] for r in res]  
             # perform reciprocal matching
@@ -356,6 +393,8 @@ class Trainer(pl.LightningModule):
 
     def spider_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
+        dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
         imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
@@ -367,10 +406,7 @@ class Trainer(pl.LightningModule):
             corresps12, corresps21 = spider_symmetric_inference(self.model, view1, view2, 'cuda')
             warp0, certainty0 = match(corresps12)
             warp1, certainty1 = match(corresps21, inverse=True)
-            
-            # imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
-            # res = inference_cuda(image_coarse_pairs, self.model, 'cuda', batch_size=1, verbose=Falsee)
-            # warp0, certainty0, warp1, certainty1 = match_symmetric(res['corresps'])         
+              
             
             h1, w1 = imgs_coarse[0]['true_shape'][0]
             h2, w2 = imgs_coarse[1]['true_shape'][0]  
@@ -388,18 +424,69 @@ class Trainer(pl.LightningModule):
             low_corresps12, corresps12, low_corresps21, corresps21 = spider_symmetric_inference_upsample(self.model, view1_coarse, view2_coarse, view1, view2, 'cuda')
             warp0, certainty0 = match_upsample(corresps12, low_corresps12)
             warp1, certainty1 = match_upsample(corresps21, low_corresps21, inverse=True)
-            
-            # imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
-            # imgs_fine_pairs = make_symmetric_pairs(imgs_fine)
-            # res = inference_upsample_cuda(imgs_coarse_pairs, imgs_fine_pairs, self.model, 'cuda', batch_size=1, verbose=True)
-            # warp0, certainty0, warp1, certainty1 = match_symmetric_upsample(res['corresps'], res['low_corresps'])
 
             h1, w1 = imgs_fine[0]['true_shape'][0]
             h2, w2 = imgs_fine[1]['true_shape'][0]
             hw0_i = imgs_fine[0]['img'].shape[2:]
             hw1_i = imgs_fine[1]['img'].shape[2:]   
            
-        sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        # sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
+        kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
+
+        b_ids = torch.where(mconf[None])[0]
+        mask = mconf > 0
+        data.update({
+            'hw0_i': hw0_i,
+            'hw1_i': hw1_i,
+            'mkpts0_f': kpts0[mask],
+            'mkpts1_f': kpts1[mask],
+            'm_bids': b_ids,
+            'mconf': mconf[mask],
+            'K0': K0[None],
+            'K1': K1[None],
+        })
+    def spider_twoheads_inference(self, data):
+        img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
+        dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        K0_ori, K1_ori = data['K0'][0], data['K1'][0]
+        imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
+        if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
+            imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
+            K0, K1 = intrinsics
+
+            view1, view2 = imgs_coarse
+            view1, view2 = collate_with_cat([(view1, view2)])
+            corresps12, corresps21 = spidertwoheads_symmetric_inference(self.model, view1, view2, 'cuda')
+            warp0, certainty0 = match(corresps12)
+            warp1, certainty1 = match(corresps21, inverse=True)
+              
+            
+            h1, w1 = imgs_coarse[0]['true_shape'][0]
+            h2, w2 = imgs_coarse[1]['true_shape'][0]  
+            hw0_i = imgs_coarse[0]['img'].shape[2:]
+            hw1_i = imgs_coarse[1]['img'].shape[2:]              
+        else:
+            imgs_coarse, _ = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=None, verbose=False)
+            imgs_fine, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori], verbose=False)
+            K0, K1 = intrinsics
+
+            view1_coarse, view2_coarse = imgs_coarse
+            view1_coarse, view2_coarse = collate_with_cat([(view1_coarse, view2_coarse)])
+            view1, view2 = imgs_fine
+            view1, view2 = collate_with_cat([(view1, view2)])
+            low_corresps12, corresps12, low_corresps21, corresps21 = spidertwoheads_symmetric_inference_upsample(self.model, view1_coarse, view2_coarse, view1, view2, 'cuda')
+            warp0, certainty0 = match_upsample(corresps12, low_corresps12)
+            warp1, certainty1 = match_upsample(corresps21, low_corresps21, inverse=True)
+
+            h1, w1 = imgs_fine[0]['true_shape'][0]
+            h2, w2 = imgs_fine[1]['true_shape'][0]
+            hw0_i = imgs_fine[0]['img'].shape[2:]
+            hw1_i = imgs_fine[1]['img'].shape[2:]   
+           
+        # sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
         b_ids = torch.where(mconf[None])[0]
@@ -416,6 +503,123 @@ class Trainer(pl.LightningModule):
         })
 
 
+    def spiderfmwarp_inference(self, data):
+        img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
+        K0_ori, K1_ori = data['K0'][0], data['K1'][0]
+        imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
+        assert self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None
+        imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
+        K0, K1 = intrinsics
+
+        view1, view2 = imgs_coarse
+        view1, view2 = collate_with_cat([(view1, view2)])
+        corresps12, corresps21 = spiderfmwarp_symmetric_inference(self.model, view1, view2, 'cuda')
+        warp0, certainty0 = fmwarp_match(corresps12)
+        warp1, certainty1 = fmwarp_match(corresps21, inverse=True)
+        
+        # imgs_coarse_pairs = make_symmetric_pairs(imgs_coarse)
+        # res = inference_cuda(image_coarse_pairs, self.model, 'cuda', batch_size=1, verbose=Falsee)
+        # warp0, certainty0, warp1, certainty1 = match_symmetric(res['corresps'])         
+        
+        h1, w1 = imgs_coarse[0]['true_shape'][0]
+        h2, w2 = imgs_coarse[1]['true_shape'][0]  
+        hw0_i = imgs_coarse[0]['img'].shape[2:]
+        hw1_i = imgs_coarse[1]['img'].shape[2:]              
+        
+           
+        sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
+
+        b_ids = torch.where(mconf[None])[0]
+        mask = mconf > 0
+        data.update({
+            'hw0_i': hw0_i,
+            'hw1_i': hw1_i,
+            'mkpts0_f': kpts0[mask],
+            'mkpts1_f': kpts1[mask],
+            'm_bids': b_ids,
+            'mconf': mconf[mask],
+            'K0': K0[None],
+            'K1': K1[None],
+        })
+    def spiderfmmlp_inference(self, data):
+        img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
+        K0_ori, K1_ori = data['K0'][0], data['K1'][0]
+        imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
+        if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
+            imgs_coarse, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=[K0_ori, K1_ori], verbose=False)
+            K0, K1 = intrinsics
+
+            view1, view2 = imgs_coarse
+            view1, view2 = collate_with_cat([(view1, view2)])
+            res = spiderfm_symmetric_inference(self.model, view1, view2, 'cuda')
+            descs = [r['desc'][0] for r in res]
+            qonfs = [r['desc_conf'][0] for r in res]  
+            # perform reciprocal matching
+            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=8)
+            kpts0, kpts1, mconf = corres                                      
+
+            hw0_i = imgs_coarse[0]['img'].shape[2:]
+            hw1_i = imgs_coarse[1]['img'].shape[2:]              
+        else:
+            imgs_coarse, _ = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.img_size, intrinsics=None, verbose=False)
+            imgs_fine, intrinsics = resize_image_with_intrinsics(imgs_ori, size=self.pcfg.fine_size, intrinsics=[K0_ori, K1_ori], verbose=False)
+            K0, K1 = intrinsics
+
+            view1_coarse, view2_coarse = imgs_coarse
+            view1_coarse, view2_coarse = collate_with_cat([(view1_coarse, view2_coarse)])
+            view1, view2 = imgs_fine
+            view1, view2 = collate_with_cat([(view1, view2)])
+            res = spiderfm_symmetric_inference(self.model, view1_coarse, view2_coarse, 'cuda')
+            descs = [r['desc'][0] for r in res]
+            qonfs = [r['desc_conf'][0] for r in res]  
+            # perform reciprocal matching
+            corres = extract_correspondences(descs, qonfs, device='cuda', subsample=8)
+            pts1, pts2, mconf = corres    
+                                           
+            h1_coarse, w1_coarse = imgs_coarse[0]['true_shape'][0]
+            h2_coarse, w2_coarse = imgs_coarse[1]['true_shape'][0]
+
+            h1, w1 = imgs_fine[0]['true_shape'][0]
+            h2, w2 = imgs_fine[1]['true_shape'][0]
+            kpts1 = (
+                torch.stack(
+                    (
+                        (w1 / w1_coarse) * (pts1[..., 0]),
+                        (h1 / h1_coarse) * (pts1[..., 1]),
+                    ),
+                    axis=-1,
+                )
+            )
+            kpts2 = (
+                torch.stack(
+                    (
+                        (w2 / w2_coarse) * (pts2[..., 0]),
+                        (h2 / h2_coarse) * (pts2[..., 1]),
+                    ),
+                    axis=-1,
+                )
+            )
+                                                    
+            kpts0, kpts1, mconf = coarse_to_fine(h1, w1, h2, w2, imgs_fine, kpts1, kpts2, mconf, self.model, 'cuda')
+
+            hw0_i = imgs_fine[0]['img'].shape[2:]
+            hw1_i = imgs_fine[1]['img'].shape[2:]   
+            hw0_i = imgs_fine[0]['img'].shape[2:]
+            hw1_i = imgs_fine[1]['img'].shape[2:]   
+
+        b_ids = torch.where(mconf[None])[0]
+        mask = mconf > 0
+        data.update({
+            'hw0_i': hw0_i,
+            'hw1_i': hw1_i,
+            'mkpts0_f': kpts0[mask],
+            'mkpts1_f': kpts1[mask],
+            'm_bids': b_ids,
+            'mconf': mconf[mask],
+            'K0': K0[None],
+            'K1': K1[None],
+        })
     def spiderfm_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
@@ -468,8 +672,24 @@ class Trainer(pl.LightningModule):
         })
 
     def gim_dkm_inference(self, data):
-        dense_matches, dense_certainty = self.model.match(data['color0'], data['color1'])
+        # dad_kpts0 = self.detector.detect_from_path(data['img_path0'][0], num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # dad_kpts1 = self.detector.detect_from_path(data['img_path1'][0], num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # sp_kpts0 = self.detector({"image": data["image0"]})['keypoints'][0]
+        # sp_kpts1 = self.detector({"image": data["image1"]})['keypoints'][0]
+        # W_A, H_A = data["image0"].shape[-2:][::-1]
+        # W_B, H_B = data["image1"].shape[-2:][::-1]
+        # sp_kpts0[:,0] /= float(W_A)
+        # sp_kpts0[:,1] /= float(H_A)
+        # sp_kpts1[:,0] /= float(W_B)
+        # sp_kpts1[:,1] /= float(H_B)
+        # sp_kpts0 = (sp_kpts0 * 2.) - 1.
+        # sp_kpts1 = (sp_kpts1 * 2.) - 1.
+
+        
+        dense_matches, dense_certainty = self.model.match(data['color0'], data['color1'])           
         sparse_matches, mconf = self.model.sample(dense_matches, dense_certainty, 5000)
+        # sparse_matches, mconf = self.model.match_keypoints2(dad_kpts0, dad_kpts1, dense_matches, dense_certainty)
+        # sparse_matches, mconf = self.model.match_keypoints2(sp_kpts0, sp_kpts1, dense_matches, dense_certainty)
         hw0_i = data['color0'].shape[2:]
         hw1_i = data['color1'].shape[2:]
         height0, width0 = data['imsize0'][0]
@@ -580,9 +800,25 @@ class Trainer(pl.LightningModule):
         self.inference(batch)
         metrics = self.compute_metrics(batch)
         return {'Metrics': metrics}
+    
+
+
 
     def test_epoch_end(self, outputs):
-        metrics = [o['Metrics'] for o in outputs]
+        def to_cpu(obj):
+            if isinstance(obj, torch.Tensor):
+                return obj.detach().cpu()
+            elif isinstance(obj, list):
+                return [to_cpu(o) for o in obj]
+            elif isinstance(obj, dict):
+                return {k: to_cpu(v) for k, v in obj.items()}
+            else:
+                return obj
+        metrics = [to_cpu(o['Metrics']) for o in outputs]
+        # metrics = {k: flattenList([_me[k] for _me in metrics]) for k in metrics[0]}
+        # all_metrics = [None for _ in range(dist.get_world_size())]  # empty slots
+        # dist.all_gather_object(all_metrics, metrics_local)
+        # metrics = [o['Metrics'] for o in outputs]
         metrics = {k: flattenList(all_gather(flattenList([_me[k] for _me in metrics]))) for k in metrics[0]}
 
         unq_ids = list(OrderedDict((iden, i) for i, iden in enumerate(metrics['identifiers'])).values())

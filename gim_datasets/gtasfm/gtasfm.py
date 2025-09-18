@@ -110,6 +110,8 @@ class GTASfMDataset(Dataset):
                            img_name1),
             'covisible0': float(pair[3]),
             'covisible1': float(pair[4]),
+            'img_path0': img_path0,
+            'img_path1': img_path1,
         }
 
         if mask0 is not None:  # img_padding is True

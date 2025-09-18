@@ -15,17 +15,14 @@
 # python test.py --gpus $gpus --weight $weight --version 100h --test --batch_size 1 --tests      BlendedMVS  --DATA_ROOT /cis/home/zshao14/datasets/zeb --checkpoint_path  /cis/home/zshao14/checkpoints/spiderfm_conv_ms_0822/checkpoint-best.pth --outdir_name spiderfm_conv_ms_0822-512
 
 # python analysis.py --dir dump/zeb/spiderfm_conv_ms_0822-512 --wid spiderfm --version 100h --verbose
-# datasets=(KITTI ICLNUIM SceneNet GL3D GTASfM BlendedMVS MultiFoV RobotcarNight RobotcarSeason RobotcarWeather ETH3DI ETH3DO)
-datasets=(KITTI ICLNUIM SceneNet GL3D GTASfM BlendedMVS MultiFoV RobotcarNight RobotcarSeason RobotcarWeather ETH3DI ETH3DO)
-#Weather)
-# RobotcarSeason RobotcarNight)
+datasets=(RobotcarNight RobotcarSeason RobotcarWeather ETH3DI ETH3DO)
+
 for ds in "${datasets[@]}"; do
-    python test.py --gpus 8 --weight spiderfmmlp --version 100h --test --batch_size 1 \
+    python test.py --gpus 7 --weight spiderfmwarp --version 100h --test --batch_size 1 \
         --tests $ds \
         --DATA_ROOT /cis/home/zshao14/datasets/zeb \
-        --outdir_name spider_msfm-512-1600 \
-        --img_size 512 \
-        --fine_size 1600
+        --outdir_name spiderfmwarp-512 \
+        --img_size 512
 done
-python analysis.py --dir dump/zeb/spider_msfm-512-1600 --wid spiderfmmlp --version 100h --verbose
+python analysis.py --dir dump/zeb/spiderfmwarp-512 --wid spiderfmwarp --version 100h --verbose
 

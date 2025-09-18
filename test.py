@@ -70,7 +70,7 @@ RANSACs = dict(
 )
 
 MODEL_ZOO = ['gim_roma', 'gim_dkm', 'gim_loftr', 'gim_lightglue', 'root_sift', 
-             'spider', 'mast3r', 'aerial-mast3r', 'mast3r-spider', 'spiderfm']
+             'spider', 'mast3r', 'aerial-mast3r', 'mast3r-spider', 'spiderfm', 'spiderfmmlp', 'spiderfmwarp']
 
 
 if __name__ == '__main__':
@@ -116,7 +116,7 @@ if __name__ == '__main__':
                         help=f'Pretrained model weight',)
 
     # Hyper-parameters
-    parser.add_argument('--img_size', type=int, default=512,
+    parser.add_argument('--img_size', type=int, default=9999,
                         help='Image Size')
     parser.add_argument('--fine_size', type=int, default=None, nargs='?',
                     const=1600, help='Image max size (optional)')
@@ -216,8 +216,8 @@ if __name__ == '__main__':
         sync_batchnorm=True,
         strategy=DDPPlugin(find_unused_parameters=False),
         # reproducible
-        benchmark=True,
-        deterministic=False,
+        benchmark=False,
+        deterministic=True,
         # logger
         enable_checkpointing=False,
         logger=logger,

@@ -85,8 +85,8 @@ class ICLNUIMDataset(Dataset):
 
         data = {
             # image 0
-            'image0': image0, # (1, 3, h, w)
-            'color0': color0,  # (1, h, w)
+            'image0': image0, # (1, h, w)
+            'color0': color0,  # (3, h, w)
             'imsize0': imsize0, # (2) - 2:(h, w)
             'resize0': resize0, # (2) - 2:(h, w)
 
@@ -110,6 +110,8 @@ class ICLNUIMDataset(Dataset):
                            img_name1+'.jpg'),
             'covisible0': float(pair[3]),
             'covisible1': float(pair[4]),
+            'img_path0': img_path0,
+            'img_path1': img_path1,
         }
 
         if mask0 is not None:  # img_padding is True
