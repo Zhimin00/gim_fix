@@ -201,6 +201,8 @@ class Trainer(pl.LightningModule):
             self.root_sift_inference(data)
         elif self.pcfg.weight == 'spider':
             self.spider_inference(data)
+        elif self.pcfg.weight == 'spider_twoheads':
+            self.spider_twoheads_inference(data)
         elif self.pcfg.weight == 'mast3r' or self.pcfg.weight == 'aerial-mast3r':
             self.mast3r_inference(data)
         elif self.pcfg.weight == 'mast3r-spider':
@@ -211,6 +213,7 @@ class Trainer(pl.LightningModule):
             self.spiderfmmlp_inference(data)
         elif self.pcfg.weight == 'spiderfmwarp':
             self.spiderfmwarp_inference(data)
+    
 
     def mast3r_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
