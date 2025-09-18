@@ -14,9 +14,9 @@ from tools.misc import lower_config, flattenList
 from tools.metrics import compute_symmetrical_epipolar_errors, compute_pose_errors
 import os
 import sys
-dad_path = os.path.abspath('/cis/home/zshao14/Downloads/dad')
-sys.path.insert(0, dad_path)
-import dad as dad_detector
+# dad_path = os.path.abspath('/cis/home/zshao14/Downloads/dad')
+# sys.path.insert(0, dad_path)
+# import dad as dad_detector
 
 import tools.path_to_spider # noqa
 from spider.utils.image import load_images_with_intrinsics, load_images_with_intrinsics_strict, load_original_images, resize_image_with_intrinsics
@@ -98,7 +98,7 @@ class Trainer(pl.LightningModule):
             detector = None
             model = None
         elif pcfg.weight == 'spider':
-            detector = dad_detector.load_DaD() #None
+            # detector = dad_detector.load_DaD() #None
             model = SPIDER.from_pretrained('/cis/home/zshao14/checkpoints/spider_mast3r_warp_0730/checkpoint-best.pth')
         elif pcfg.weight == 'spider_twoheads':
             model = SPIDER_twoheads.from_pretrained(self.pcfg.checkpoint_path)
@@ -396,8 +396,8 @@ class Trainer(pl.LightningModule):
 
     def spider_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
-        dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
-        dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
         imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
@@ -433,8 +433,8 @@ class Trainer(pl.LightningModule):
             hw0_i = imgs_fine[0]['img'].shape[2:]
             hw1_i = imgs_fine[1]['img'].shape[2:]   
            
-        # sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
-        sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
+        sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        # sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
         b_ids = torch.where(mconf[None])[0]
@@ -451,8 +451,8 @@ class Trainer(pl.LightningModule):
         })
     def spider_twoheads_inference(self, data):
         img_path0, img_path1 = data['img_path0'][0], data['img_path1'][0]
-        dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
-        dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # dad_kpts0 = self.detector.detect_from_path(img_path0, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
+        # dad_kpts1 = self.detector.detect_from_path(img_path1, num_keypoints=4096*8, return_dense_probs=False)['keypoints'][0].float()
         K0_ori, K1_ori = data['K0'][0], data['K1'][0]
         imgs_ori = load_original_images([img_path0, img_path1], verbose=False)
         if self.pcfg.fine_size == self.pcfg.img_size or self.pcfg.fine_size is None:
@@ -488,8 +488,8 @@ class Trainer(pl.LightningModule):
             hw0_i = imgs_fine[0]['img'].shape[2:]
             hw1_i = imgs_fine[1]['img'].shape[2:]   
            
-        # sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
-        sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
+        sparse_matches, mconf = sample_symmetric(warp0, certainty0, warp1, certainty1, num=5000)
+        # sparse_matches, mconf = match_keypoints2(dad_kpts0, dad_kpts1, warp0, certainty0, warp1, certainty1)
         kpts0, kpts1 = to_pixel_coordinates(sparse_matches, h1, w1, h2, w2)
 
         b_ids = torch.where(mconf[None])[0]
